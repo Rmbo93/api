@@ -3,6 +3,8 @@ const mongoose = require("mongoose");
 const riderSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
   phoneNumber: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+
   address: { type: String },
   profileImage: { type: String },
   emergencyContact: { type: String },
