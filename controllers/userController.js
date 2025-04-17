@@ -122,3 +122,83 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
+const Rider = require('../models/riderModel');
+const fetch = require('node-fetch');
+
+exports.sendVipNotification = async (req, res) => {
+  try {
+    const { type } = req.body;
+
+    // جلب السائقين المتاحين
+    const onlineRiders = await Rider.find({
+      isOnline: true,
+      ridePreferences: { vip: true }, // تأكد ان هذا موجود في الداتا
+      expoPushToken: { $exists: true },
+    });
+
+    for (const rider of onlineRiders) {
+      await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: rider.expoPushToken,
+          sound: 'default',
+          title: '🚖 VIP Ride Request!',
+          body: 'A client is requesting a VIP ride. Open the app to accept it.',
+        }),
+      });
+    }
+
+    res.status(200).json({ message: 'Notifications sent' });
+  } catch (error) {
+    console.error('❌ Notification Error:', error);
+    res.status(500).json({ message: 'Failed to send notifications' });
+  }
+};
+const { Expo } = require('expo-server-sdk');
+let expo = new Expo();
+
+exports.notifyVIPDrivers = async (req, res) => {
+  try {
+    const { message } = req.body;
+    
+    // ✅ الفلترة الآن تشمل فقط السائقين الأونلاين الذين يفضلون VIP
+    const onlineRiders = await Rider.find({
+      isOnline: true,
+      expoPushToken: { $exists: true, $ne: null },
+      ridePreferences: { $in: ['VIP'] }
+    });
+
+    console.log("🚕 Sending VIP notifications to:", onlineRiders.map(r => ({
+      name: r.fullName,
+      token: r.expoPushToken
+    })));
+
+    const messages = onlineRiders.map(driver => ({
+      to: driver.expoPushToken,
+      sound: 'default',
+      title: '🚖 VIP Ride Request!',
+      body: message || 'A client is requesting a VIP ride.',
+      data: { type: 'vip-request' }
+    }));
+
+    let chunks = expo.chunkPushNotifications(messages);
+    for (let chunk of chunks) {
+      await expo.sendPushNotificationsAsync(chunk);
+    }
+
+    res.status(200).json({ message: 'Notifications sent to online VIP drivers.' });
+  } catch (error) {
+    console.error('❌ Notification error:', error);
+    res.status(500).json({ message: 'Failed to send notifications.' });
+  }
+};
+
+const onlineRiders = await Rider.find({
+  isOnline: true,
+  expoPushToken: { $exists: true, $ne: null },
+  ridePreferences: { $in: ['VIP'] }
+});

@@ -122,6 +122,23 @@ exports.getRiderById = async (req, res) => {
     res.status(500).json({ message: "فشل في جلب الرايدر.", error });
   }
 };
+exports.updatePreferences = async (req, res) => {
+  try {
+    const riderId = req.user.userId;
+    const { ridePreferences } = req.body;
+
+    const rider = await Rider.findByIdAndUpdate(
+      riderId,
+      { ridePreferences },
+      { new: true }
+    );
+
+    res.status(200).json({ message: 'Preferences updated successfully', rider });
+  } catch (error) {
+    console.error('❌ Error updating preferences:', error);
+    res.status(500).json({ message: 'Failed to update preferences' });
+  }
+};
 
 // تحديث بيانات رايدر
 exports.updateRider = async (req, res) => {
@@ -142,5 +159,60 @@ exports.deleteRider = async (req, res) => {
     res.json({ message: "تم حذف الرايدر بنجاح." });
   } catch (error) {
     res.status(500).json({ message: "فشل في حذف الرايدر.", error });
+  }
+};
+// إرسال إشعار للسائقين أونلاين المهتمين بـ VIP
+exports.notifyVipDrivers = async (req, res) => {
+  try {
+    // جلب جميع السائقين الذين أونلاين ويفضلون VIP
+    const vipDrivers = await Rider.find({
+      isOnline: true,
+      preferredRideTypes: { $in: ['VIP'] }
+    });
+
+    if (vipDrivers.length === 0) {
+      return res.status(200).json({ message: "لا يوجد سائقين VIP متصلين حالياً." });
+    }
+
+    // Placeholder: عرض السائقين الذين يجب أن تصلهم الإشعارات
+    vipDrivers.forEach(driver => {
+      console.log(`🚨 إشعار لـ ${driver.fullName} (رقم: ${driver.phoneNumber}) - يوجد طلب VIP`);
+      // TODO: هنا ممكن تربط Firebase Cloud Messaging لإرسال إشعار حقيقي
+    });
+
+    res.status(200).json({ message: `تم إشعار ${vipDrivers.length} سائق/ين بخدمة VIP.` });
+
+  } catch (error) {
+    console.error('❌ Error notifying VIP drivers:', error);
+    res.status(500).json({ message: "فشل إرسال الإشعارات.", error });
+  }
+};
+exports.saveExpoToken = async (req, res) => {
+  try {
+    const riderId = req.user.userId; // من middleware
+    const { expoPushToken } = req.body;
+
+    const rider = await Rider.findByIdAndUpdate(
+      riderId,
+      { expoPushToken },
+      { new: true }
+    );
+
+    res.status(200).json({ message: 'Token saved', rider });
+  } catch (error) {
+    console.error('❌ Error saving token:', error);
+    res.status(500).json({ message: 'Failed to save token' });
+  }
+};
+exports.updateRiderToken = async (req, res) => {
+  try {
+    const token = req.body.expoPushToken;
+    const riderId = req.userId;
+
+    await Rider.findByIdAndUpdate(riderId, { expoPushToken: token });
+    res.status(200).json({ message: 'Token updated successfully' });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update token', error });
   }
 };

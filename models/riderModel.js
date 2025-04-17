@@ -8,7 +8,7 @@ const riderSchema = new mongoose.Schema({
   address: { type: String },
   profileImage: { type: String },
   emergencyContact: { type: String },
-
+  
   vehicleType: { type: String, enum: ["bicycle", "motorbike", "car"] },
   vehicleImage: { type: String },
   vehicleColor: { type: String },
@@ -26,7 +26,9 @@ const riderSchema = new mongoose.Schema({
   insuranceExpiry: { type: Date },
   mechanicExpiry: { type: Date },
   licenseExpiry: { type: Date },
-
+  ridePreferences: [{ type: String, enum: ['VIP', 'Okonomi'] }],
+  expoPushToken: { type: String },
+  
   isOnline: { type: Boolean, default: false },
   isVerified: { type: Boolean, default: false },
   location: {

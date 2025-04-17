@@ -16,8 +16,10 @@ app.use(bodyParser.json());
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
-
+app.use('/api/users', userRoutes); 
 app.use('/users', userRoutes);
 app.use('/api/riders', riderRoutes); // 🔹 أضف هذا السطر
+
+
 
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
